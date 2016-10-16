@@ -1,0 +1,251 @@
+#!/bin/bash
+
+
+dbo="printrakpro";
+
+servero="--login-path=localhost";
+dbi="printrakpro";
+table='';
+destination="/home/www/root/data";
+serveri="--login-path=dmysql01b";
+
+timestamp=`date`;
+
+echo "-------------------------------------------------------------------------"
+echo $timestamp
+echo "-------------------------------------------------------------------------"
+
+cache='';
+tcopy='';
+f='';
+l='';
+sync='';
+nodata=;
+vcs=;
+triggers="--triggers";
+import="1";
+logfile=;
+definer=;
+
+
+do_import() {
+  echo -n " > Importing file";
+  mysql $servero $dbo < $dfile
+}
+
+do_vsc_commit() {
+
+  git -C $destination add $logfile
+  git -C $destination commit -m "$dbi schema version $timestamp"
+  echo $destination exit 0;
+  git_remote=$(git -C $destination remote -v );
+  [ "$git_remote" != "" ] && git -C $destination push || echo "No remote server to push";
+}
+
+
+do_vcs_add() {
+  git -C $destination add $dfile 1>>$logfile 2>>$logfile
+}
+
+dump_table() {
+  mysqldump $serveri $dbi $i $nodata $triggers --skip-comments> $dfile;
+}
+
+dump_view() {
+  mysqldump $serveri $dbi $i --skip-comments | sed "s/DEFINER=.*SQL SECURITY/$definer SQL SECURITY/g" | sed "s/utf8mb4/utf8/g"| sed "s/latin1_swedish_ci/utf8_general_ci/g"| sed "s/latin1/utf8/g"  > $dfile;
+}
+
+dump_function() {
+
+  echo "DROP FUNCTION IF EXISTS \`$i\`;" >$dfile
+  echo "DELIMITER ;;" >>$dfile
+  mysql $serveri $dbi -e "show CREATE FUNCTION $i \G" | tail -n+4 | sed 's/Create Function://g' | sed "s/DEFINER.*FUNCTION/$definer FUNCTION/g" | head -n -3 >> $dfile;
+  echo ";;" >>$dfile;
+  echo "DELIMITER ;" >>$dfile;
+
+}
+
+dump_procedure() {
+
+  echo "DROP PROCEDURE IF EXISTS \`$i\`;" >$dfile
+  echo "DELIMITER ;;" >>$dfile
+  mysql $serveri $dbi -e "show CREATE procedure $i \G" | tail -n+4 | sed 's/Create Procedure://g' | sed "s/DEFINER.*PROCEDURE/$definer PROCEDURE/g" | head -n -3 >> $dfile;
+  echo ";;" >>$dfile;
+  echo "DELIMITER ;" >>$dfile;
+
+}
+
+do_dump() {
+  echo -n " > dump file ";
+
+  case $tcopy in
+    r|p|procedure ) dump_procedure ;;
+    f|function    ) dump_function  ;;
+    v|view        ) dump_view      ;;
+    *             ) dump_table     ;;
+
+  esac
+  logfile="$destination/backup.log"
+  [ "$vcs" == "1" ] && do_vcs_add;
+}
+
+do_conditions() {
+  if [ "$table" != "" ]; then
+    _table='';
+    for t in $table; do
+  	  _table="$_table ($FIELD_NAME LIKE '$t')OR";
+  	done;
+
+  	_table=${_table%?}
+  	_table=${_table%?}
+
+  	condition="$condition AND $conditionb AND ($_table)";
+
+  else
+  	condition="$condition AND $conditionb";
+  fi;
+
+
+
+  if [ "$condition" != "" ]; then
+    condition="WHERE $condition";
+  fi
+}
+
+do_usage() {
+
+
+  echo "--no-data|-d           ) Only for tables: only dump structure"
+  echo "--skip-triggers        ) Only for tables: do not export triggers"
+  echo "--git|--vcs            ) commit changes into bitbucket salmat repository"
+
+  echo "--no-import            ) create dump files only"
+  echo "--cache                ) import files using cached files (oposite to --no-import)"
+
+  echo "--type                 ) cache specify objects to dump [t]able|[r]outines|[v]iews|[f]unctions"
+  echo "r|v|t|f|p              ) same than --type r|v|t|f|p"
+  echo "-S | --database-source ) Origin Database. Default : printrakpro"
+  echo "-HS| --server-source   ) Login-path for Origin Server. Default : mysql01b"
+  echo "-D | --database-dest   ) Destination Database. Default : printrakpro"
+  echo "-HD| --server-dest     ) Login-path for Destination Server. Default : localhost"
+  echo "-O                     ) Output folder for dump files default /home/www/root/data"
+  echo "--definer              ) change definer owner"
+  echo "--list|-l              ) List objects only. do not export or commit changes"
+  echo "-s|--sync              ) Sync missing objects only"
+  echo "--condition            ) Add extra scopes for objects to be exported"
+  echo "--refresh  x           ) Sync only objects changes in the last number of [x] days"
+  echo "-?|--help              ) this help"
+  echo "*                      ) objects to be exported. can use % simbol for use like instruction"
+
+
+
+
+
+}
+
+
+
+condition="(1=1)";
+
+while [ "$1" != "" ]; do
+    case $1 in
+    --no-import            ) import=;;
+    --cache                ) cache=1;;
+
+    --no-data|-d           ) nodata="--no-data";;
+    --skip-triggers        ) triggers="--skip-triggers";;
+    --git|--vcs            ) vcs=1;;
+
+    --type                 ) shift;tcopy=$1;;
+    r|v|t|f|p              ) tcopy=$1;;
+    -S | --database-source ) shift;dbi=$1;;
+    -D | --database-dest   ) shift;dbo=$1;;
+    -HS| --server-source   ) shift;serveri="--login-path=$1";;
+    -HD| --server-dest     ) shift;servero="--login-path=$1";;
+    -O                     ) shift;destination=$1;;
+
+    --definer              ) shift;defineruser=`echo $1 | cut -d'@' -f1`;definerhost=`echo $1 | cut -d'@' -f2`; definer="DEFINER=\`$defineruser\`@\`$definerhost\`";;
+
+    --list|-l              ) l=1;;
+    -s                     ) sync=1;;
+    --condition            ) shift;condition="$condition AND $1";;
+    --refresh              ) shift;condition="$condition AND DATEDIFF(now(),UPDATE_TIME)<$1";;
+
+
+
+    -?|--help              ) do_usage;exit 0;;
+    *                      ) table="$table $1";;
+
+    esac
+    shift
+done
+case $tcopy in
+  r|p|procedure ) f="procedures";ttcopy="Procedure ";TABLE="ROUTINES";FIELD_NAME="ROUTINE_NAME"; conditionb="ROUTINE_SCHEMA='$dbi' AND ROUTINE_TYPE='PROCEDURE'";;
+  f|function    ) f="functions" ;ttcopy="Function  ";TABLE="ROUTINES";FIELD_NAME="ROUTINE_NAME"; conditionb="ROUTINE_SCHEMA='$dbi' AND ROUTINE_TYPE='FUNCTION' ";;
+  v|view        ) f="views"     ;ttcopy="View      ";TABLE="VIEWS"   ;FIELD_NAME="TABLE_NAME"  ; conditionb="TABLE_SCHEMA='$dbi' ";;
+  *             ) f="tables"    ;ttcopy="Table     ";TABLE="TABLES"  ;FIELD_NAME="TABLE_NAME"  ; conditionb="TABLE_SCHEMA='$dbi' AND TABLE_TYPE<>'VIEW'";;
+
+esac
+
+do_conditions
+
+
+
+sql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition ";
+
+echo "Source      : $dbi";
+echo "Destination : $servero |$dbo";
+echo "Dump Path   : $destination/$f/";
+echo "Object      : $ttcopy";
+echo "sync        : $sync";
+
+mysqlD="mysql $servero $dbo";
+
+echo;
+if [ "$l" == "1" ]; then
+  echo $sql;
+  sql="SELECT '$ttcopy' as ttcopy,$FIELD_NAME FROM information_schema.$TABLE $condition ";
+  echo "mysql $serveri $dbi"
+  mysql $serveri $dbi -e "$sql" | sed 1d;
+
+else
+
+
+  for i in `mysql $serveri $dbi -e "$sql" | sed 1d `; do
+  	printf "%s %-100s " "$ttcopy" "$i";
+    if [ ! -d $destination/$f ]; then
+      mkdir -p $destination/$f;
+    fi
+    dfile=$destination/$f/$i.sql;
+
+    if [ "$sync" == "1" ]; then
+      prevsql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition AND $FIELD_NAME='$i';";
+      prevres=$(echo "$prevsql" | $mysqlD | sed 1d);
+      if [ "$prevres" == "" ]; then
+        echo -n "Not exists";
+        make_copy="1";
+      else
+        echo -n "Exists";
+        make_copy="";
+      fi
+    else
+      make_copy="1";
+    fi
+    if [ "$make_copy" == "1" ]; then
+    	[ "$cache" == "" ] && do_dump;
+
+      [ "$import" == "1" ] && do_import;
+
+    fi
+  	echo " > OK";
+  done
+  [ "$vcs" == "1" ] && do_vsc_commit;
+fi
+echo;
+
+
+
+echo "Start Time  : $timestamp";
+
+timestamp=`date`;
+echo "End Time    : $timestamp";
