@@ -12,7 +12,7 @@ Mysql/MariaDB tool for re-sync, copy and upgrate databases from one server to an
 ## Installation
 ```
 git clone git@github.com:caherrera/mysqloffsync.git ~/mysqloffsync
-sudo ln -s ~/mysqloffsync/mysqloffsync /usr/local/bin/mysqloffsync
+cd ~/mysqloffsync && sudo ./install.sh
 ```
 
 ## Usage
