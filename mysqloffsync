@@ -1,14 +1,79 @@
 #!/bin/bash
 
+get_config_list()
+{
+   typeset config_file=$1
 
-dbo="printrakpro";
+   awk -F '[][]' '
+      NF==3 && $0 ~ /^\[.*\]/ { print $2 }
+   ' ${config_file}
+}
 
-servero="--login-path=localhost";
-dbi="printrakpro";
+# Function : set_config_vars config_file config [var_prefix]
+# Purpose  : Set variables (optionaly prefixed by var_prefix) from config in config file
+set_config_vars()
+{
+   typeset config_file=$1
+   typeset config=$2
+   typeset var_prefix=$3
+   typeset config_vars
+
+   config_vars=$(
+        awk -F= -v Config="${config}" -v Prefix="${var_prefix}" '
+        BEGIN {
+           Config = toupper(Config);
+           patternConfig = "\\[" Config "]";
+        }
+        toupper($0)  ~ patternConfig,(/\[/ && toupper($0) !~ patternConfig)  {
+           if (/\[/ || NF <2) next;
+           sub(/^[[:space:]]*/, "");
+           sub(/[[:space:]]*=[[:space:]]/, "=");
+           print Prefix $0;
+        } ' ${config_file} )
+
+   eval "${config_vars}"
+}
+
+createIni() {
+
+  if [ ! -f $cfg ]; then
+    echo "Creating config file $cfg";
+    echo "[mysqloffsync]" > $cfg
+    echo "dbo=\"mydb\""                            >> $cfg
+    echo "servero=\"--login-path=localhost\"" >> $cfg
+    echo "dbi=\"mydb\"" >> $cfg
+    echo "destination=\"~/mysqloffsync/data\"" >> $cfg
+    echo "serveri=\"--login-path=dmysql01b\"" >> $cfg
+
+
+
+  fi
+}
+
+
+etc=$HOME/.mysqloffsync
+cfg=$etc/mysqloffsync.ini
+
+createConfigFolder() {
+  if ! [ -d "$etc" ]; then
+    echo "Creating config folder $etc"
+    mkdir -p "$etc" || exit 1;
+  fi
+}
+
+createConfigFolder
+createIni
+
+set_config_vars $cfg "mysqloffsync" "mysqloffsync_"
+
+
+dbo=$mysqloffsync_dbo;
+servero=$mysqloffsync_servero;
+dbi=$mysqloffsync_dbi;
+destination=$mysqloffsync_destination;
+serveri=$mysqloffsync_serveri;
+
 table='';
-destination="/home/www/root/data";
-serveri="--login-path=dmysql01b";
-
 timestamp=`date`;
 
 echo "-------------------------------------------------------------------------"
