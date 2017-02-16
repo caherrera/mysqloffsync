@@ -39,11 +39,16 @@ createIni() {
   if [ ! -f $cfg ]; then
     echo "Creating config file $cfg";
     echo "[mysqloffsync]" > $cfg
-    echo "dbo=\"mydb\""                            >> $cfg
-    echo "servero=\"--login-path=localhost\"" >> $cfg
-    echo "dbi=\"mydb\"" >> $cfg
+    echo "from_db=\"mydb\""                            >> $cfg
+    echo "from_server=\"--login-path=localhost\"" >> $cfg
+    echo >>$cfg
+
+    echo "to_db=\"mydb\"" >> $cfg
+    echo "to_server=\"--login-path=localhost\"" >> $cfg
+    echo >>$cfg
+
     echo "destination=\"~/mysqloffsync/data\"" >> $cfg
-    echo "serveri=\"--login-path=dmysql01b\"" >> $cfg
+
 
 
 
@@ -64,14 +69,16 @@ createConfigFolder() {
 createConfigFolder
 createIni
 
-set_config_vars $cfg "mysqloffsync" "mysqloffsync_"
+set_config_vars $cfg "mysqloffsync" "cfg_"
+
+dbi=$cfg_from_db;
+serveri=$cfg_from_server;
+
+dbo=$cfg_to_db;
+servero=$cfg_to_server
 
 
-dbo=$mysqloffsync_dbo;
-servero=$mysqloffsync_servero;
-dbi=$mysqloffsync_dbi;
-destination=$mysqloffsync_destination;
-serveri=$mysqloffsync_serveri;
+destination=$cfg_destination;
 
 table='';
 timestamp=`date`;
@@ -229,6 +236,7 @@ while [ "$1" != "" ]; do
     -HD| --server-dest     ) shift;servero="--login-path=$1";;
     -O                     ) shift;destination=$1;;
 
+
     --definer              ) shift;defineruser=`echo $1 | cut -d'@' -f1`;definerhost=`echo $1 | cut -d'@' -f2`; definer="DEFINER=\`$defineruser\`@\`$definerhost\`";;
 
     --list|-l              ) l=1;;
@@ -258,8 +266,8 @@ do_conditions
 
 sql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition ";
 
-echo "Source      : $dbi";
-echo "Destination : $servero |$dbo";
+echo "Source      : $serveri | $dbi";
+echo "Destination : $servero | $dbo";
 echo "Dump Path   : $destination/$f/";
 echo "Object      : $ttcopy";
 echo "sync        : $sync";
@@ -277,7 +285,7 @@ else
 
 
   for i in `mysql $serveri $dbi -e "$sql" | sed 1d `; do
-  	printf "%s %-100s " "$ttcopy" "$i";
+  	printf "%s %-40s " "$ttcopy" "$i";
     if [ ! -d $destination/$f ]; then
       mkdir -p $destination/$f;
     fi
