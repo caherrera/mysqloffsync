@@ -289,7 +289,12 @@ else
     if [ ! -d $destination/$f ]; then
       mkdir -p $destination/$f;
     fi
+
     dfile=$destination/$f/$i.sql;
+
+    if [ "$l" == "1" ]; then
+      echo -n $dfile
+    fi
 
     if [ "$sync" == "1" ]; then
       prevsql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition AND $FIELD_NAME='$i';";
