@@ -108,7 +108,7 @@ do_import() {
 do_vsc_commit() {
 
   git -C $destination add $logfile
-  git -C $destination commit -m "$dbi schema version $timestamp"
+  git -C $destination commit -m "$dbi schema [ type $ttcopy ] version $timestamp"
   echo $destination exit 0;
   git_remote=$(git -C $destination remote -v );
   [ "$git_remote" != "" ] && git -C $destination push || echo "No remote server to push";
