@@ -66,6 +66,12 @@ createConfigFolder() {
   fi
 }
 
+debug() {
+  if [ "$l" == "1" ]; then
+    echo $1 $2 $3 $4 $5 $6 $7 $8 $9
+  fi
+}
+
 createConfigFolder
 createIni
 
@@ -292,11 +298,10 @@ else
 
     dfile=$destination/$f/$i.sql;
 
-    if [ "$l" == "1" ]; then
-      echo -n $dfile
-    fi
+    debug -n $dfile
 
     if [ "$sync" == "1" ]; then
+      debug "Using option to sync only"
       prevsql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition AND $FIELD_NAME='$i';";
       prevres=$(echo "$prevsql" | $mysqlD | sed 1d);
       if [ "$prevres" == "" ]; then
@@ -310,9 +315,16 @@ else
       make_copy="1";
     fi
     if [ "$make_copy" == "1" ]; then
-    	[ "$cache" == "" ] && do_dump;
+      debug "Make a new copy"
+    	if [ "$cache" == "" ]l then
+        debug "Do not use cached. Force to dump"
+         do_dump;
+       fi
 
-      [ "$import" == "1" ] && do_import;
+      if [ "$import" == "1" ]; then
+        debug "Importing dump file"
+        do_import;
+      fi
 
     fi
   	echo " > OK";
