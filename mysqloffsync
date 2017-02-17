@@ -316,9 +316,9 @@ else
     fi
     if [ "$make_copy" == "1" ]; then
       debug "Make a new copy"
-    	if [ "$cache" == "" ]l then
+    	if [ "$cache" == "" ]; then
         debug "Do not use cached. Force to dump"
-         do_dump;
+        do_dump;
        fi
 
       if [ "$import" == "1" ]; then
