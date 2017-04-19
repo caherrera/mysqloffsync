@@ -168,8 +168,9 @@ do_dump() {
 }
 
 do_conditions() {
+  _table='';
   if [ "$table" != "" ]; then
-    _table='';
+
     for t in $table; do
   	  _table="$_table ($FIELD_NAME LIKE '$t')OR";
   	done;
@@ -177,17 +178,23 @@ do_conditions() {
   	_table=${_table%?}
   	_table=${_table%?}
 
-  	condition="$condition AND $conditionb AND ($_table)";
+  	_table=" AND ($_table)";
 
-  else
-  	condition="$condition AND $conditionb";
   fi;
 
+  _except='';
+  if [ "$except" != "" ]; then
 
+    for e in $except; do
+  	  _except="$_except ($FIELD_NAME LIKE '$e')OR";
+  	done;
 
-  if [ "$condition" != "" ]; then
-    condition="WHERE $condition";
-  fi
+  	_except=${_except%?}
+  	_except=${_except%?}
+
+  	_except=" AND NOT ($_except)";
+  fi;
+  condition="WHERE $condition AND $conditionb $_table $_except";
 }
 
 do_usage() {
@@ -211,6 +218,7 @@ do_usage() {
   echo "--list|-l              ) List objects only. do not export or commit changes"
   echo "-s|--sync              ) Sync missing objects only"
   echo "--condition            ) Add extra scopes for objects to be exported"
+  echo "--except               ) exclude objects from process"
   echo "--refresh  x           ) Sync only objects changes in the last number of [x] days"
   echo "-?|--help              ) this help"
   echo "*                      ) objects to be exported. can use % simbol for use like instruction"
@@ -224,6 +232,7 @@ do_usage() {
 
 
 condition="(1=1)";
+except="";
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -248,6 +257,7 @@ while [ "$1" != "" ]; do
     --list|-l              ) l=1;;
     -s                     ) sync=1;;
     --condition            ) shift;condition="$condition AND $1";;
+    --except               ) shift;except="$except $1";;
     --refresh              ) shift;condition="$condition AND DATEDIFF(now(),UPDATE_TIME)<$1";;
 
 
@@ -270,7 +280,7 @@ do_conditions
 
 
 
-sql="SELECT $FIELD_NAME FROM information_schema.$TABLE $condition ";
+sql="SELECT $FIELD_NAME AS O FROM information_schema.$TABLE $condition";
 
 echo "Source      : $serveri | $dbi";
 echo "Destination : $servero | $dbo";
