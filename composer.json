@@ -11,8 +11,9 @@
       "email" : "carlos.herrera@itlinesoftware.com"
     }
   ],
-  "config": {
-        "bin-dir": "./bin"
-    }
+  "bin": [
+    "./bin/mysqloffsync"
+  ]
+
 
 }
