@@ -1,19 +1,13 @@
 {
-  "name": "caherrera/mysqloffsync",
-  "type": "library",
-  "keywords": ["mysql","mysqldump","sync"],
-  "homepage": "https://github.com/caherrera/mysqloffsync",
-  "description": "this is a simple wrapper tool with some extras to mysqlump like connect your changes into a git repo or sync from server a to b",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Carlos Herrera",
-      "email" : "carlos.herrera@itlinesoftware.com"
-    }
-  ],
-  "bin": [
-    "./bin/mysqloffsync"
-  ]
-
-
+    "name": "caherrera/mysqloffsync",
+    "description": "this is a simple wrapper tool with some extras to mysqlump like connect your changes into a git repo or sync from server a to b",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Carlos Herrera",
+            "email": "carlos.herrera@fusepartners.com.au"
+        }
+    ],
+    "require": {}
 }
