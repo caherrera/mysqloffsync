@@ -1,4 +1,20 @@
 #!/bin/bash
+this="$( realpath "${BASH_SOURCE[0]}" )";
+
+do_install()
+{
+  [ ! -f /usr/local/bin/$(basename $this) ] && echo "Installing $(basename $this) into /usr/local/bin" || echo "$(basename $this) already installed"
+  [ ! -f /usr/local/bin/$(basename $this) ] && sudo ln -s $this /usr/local/bin && echo "done"
+}
+
+do_uninstall()
+{
+  [ -f /usr/local/bin/$(basename $this) ] && echo "Removing $(basename $this) from /usr/local/bin" || echo "$(basename $this) already gone"
+  [ -f /usr/local/bin/$(basename $this) ] && sudo unlink /usr/local/bin/$(basename $this) && echo "done"
+
+}
+
+
 
 get_config_list()
 {
@@ -220,6 +236,8 @@ do_usage() {
   echo "--condition            ) Add extra scopes for objects to be exported"
   echo "--except               ) exclude objects from process"
   echo "--refresh  x           ) Sync only objects changes in the last number of [x] days"
+  echo "--install|-i           ) install in /usr/local/bin/"
+  echo "--uninstall            ) uninstall /usr/local/bin/ link"
   echo "-?|--help              ) this help"
   echo "*                      ) objects to be exported. can use % simbol for use like instruction"
 
@@ -236,6 +254,8 @@ except="";
 
 while [ "$1" != "" ]; do
     case $1 in
+      --install|-i         ) do_install;exit 0;;
+      --uninstall          ) do_uninstall;exit 0;;
     --no-import            ) import=;;
     --cache                ) cache=1;;
 
