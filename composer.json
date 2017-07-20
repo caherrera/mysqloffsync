@@ -9,5 +9,9 @@
             "email": "carlos.herrera@fusepartners.com.au"
         }
     ],
-    "require": {}
+    "require": {},
+    "bin": [
+      "./bin/mysqloffsync"
+    ]
+
 }
