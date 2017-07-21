@@ -89,9 +89,10 @@ debug() {
 }
 
 createConfigFolder
-createIni
 
-set_config_vars $cfg "mysqloffsync" "cfg_"
+
+
+[ -f $cfg ] && set_config_vars $cfg "mysqloffsync" "cfg_"
 
 dbi=$cfg_from_db;
 serveri=$cfg_from_server;
@@ -105,9 +106,6 @@ destination=$cfg_destination;
 table='';
 timestamp=`date`;
 
-echo "-------------------------------------------------------------------------"
-echo $timestamp
-echo "-------------------------------------------------------------------------"
 
 cache='';
 tcopy='';
@@ -239,6 +237,7 @@ do_usage() {
   echo "--install|-i           ) install in /usr/local/bin/"
   echo "--uninstall            ) uninstall /usr/local/bin/ link"
   echo "-?|--help              ) this help"
+  echo "--setup                ) will create ini file"
   echo "*                      ) objects to be exported. can use % simbol for use like instruction"
 
 
@@ -254,8 +253,9 @@ except="";
 
 while [ "$1" != "" ]; do
     case $1 in
-      --install|-i         ) do_install;exit 0;;
-      --uninstall          ) do_uninstall;exit 0;;
+    --setup                ) createIni;exit 0;;
+    --install|-i           ) do_install;exit 0;;
+    --uninstall            ) do_uninstall;exit 0;;
     --no-import            ) import=;;
     --cache                ) cache=1;;
 
@@ -296,8 +296,17 @@ case $tcopy in
 
 esac
 
-do_conditions
 
+
+
+function run_process() {
+
+  do_conditions
+
+
+echo "-------------------------------------------------------------------------"
+echo $timestamp
+echo "-------------------------------------------------------------------------"
 
 
 sql="SELECT $FIELD_NAME AS O FROM information_schema.$TABLE $condition";
@@ -369,3 +378,22 @@ echo "Start Time  : $timestamp";
 
 timestamp=`date`;
 echo "End Time    : $timestamp";
+
+}
+
+function do_suggestion() {
+  echo "Setup your login-path in mysql"
+  echo 
+  echo "mysql_config_editor set --login-path=production.server.local --user=db_owner --password"
+  echo "mysql_config_editor set --login-path=dev.server.local --user=db_owner --password"
+  echo 
+  echo "after you can set up your mysqloffsync.ini file"
+  echo "try this first"
+  echo "$0 --setup "
+  echo "and edit your file using your favorite editor"
+  echo "vim ~/.mysqloffsync/mysqloffsync.ini "
+  
+}
+
+
+[ -f $cfg ] && run_process || do_suggestion
