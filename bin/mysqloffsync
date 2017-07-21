@@ -73,7 +73,11 @@ createIni() {
 
 
 etc=$HOME/.mysqloffsync
-cfg=$etc/mysqloffsync.ini
+if [ -f ./mysqloffsync.ini ]; then
+  cfg="./mysqloffsync.ini"
+else
+  cfg=$etc/mysqloffsync.ini
+fi
 
 createConfigFolder() {
   if ! [ -d "$etc" ]; then
