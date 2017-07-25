@@ -63,7 +63,7 @@ createIni() {
     echo "to_server=\"--login-path=localhost\"" >> $cfg
     echo >>$cfg
 
-    echo "destination=\"~/mysqloffsync/data\"" >> $cfg
+    echo "destination=\"$HOME/mysqloffsync/data\"" >> $cfg
 
 
 
@@ -105,7 +105,7 @@ dbo=$cfg_to_db;
 servero=$cfg_to_server
 
 
-destination=$cfg_destination;
+destination=$( realpath $cfg_destination);
 
 table='';
 timestamp=`date`;
