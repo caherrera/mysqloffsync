@@ -321,6 +321,7 @@ echo "Dump Path   : $destination/$f/";
 echo "Object      : $ttcopy";
 echo "sync        : $sync";
 
+mkdir -p "$destination/$f";
 mysqlD="mysql $servero $dbo";
 
 echo;
