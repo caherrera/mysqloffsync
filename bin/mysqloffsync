@@ -144,7 +144,9 @@ do_vcs_add() {
 }
 
 dump_table() {
-  mysqldump $serveri $dbi $i $nodata $triggers --skip-comments> $dfile;
+
+  mysqldump $serveri $dbi $i $nodata $triggers --skip-comments --hex-blob  --skip-triggers  --master-data=1 --order-by-primary --compact --no-autocommit --default-character-set=utf8 --single-transaction --set-gtid-purged=on > $dfile;
+  
 }
 
 dump_view() {
